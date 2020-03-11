@@ -1,4 +1,5 @@
 package model;
+import java.util.*;
 
 public class User {
 
@@ -9,6 +10,7 @@ public class User {
 	private String address;
 	private String assignedTurn;
 	private boolean hasTurn;
+	private ArrayList<Turn> requestedTurns;
 
 	public User(String documentType, String documentNumber, String name, String lastNames, String phone, String address) {
 		this.documentType = documentType;
@@ -19,6 +21,7 @@ public class User {
 		this.address = address;
 		assignedTurn = "";
 		hasTurn = false;
+		requestedTurns = new ArrayList<Turn>();
 	}
 
 	/**
@@ -117,7 +120,6 @@ public class User {
 	 */
 	public void assignTurn(String turn) {
 		assignedTurn = turn;
-		hasTurn = true;
 	}
 
 	/**
@@ -132,6 +134,17 @@ public class User {
 	 */
 	public void setHasTurn(boolean hasTurn) {
 		this.hasTurn = hasTurn;
+	}
+	
+	public void addRequestedTurn(Turn pTurn) {
+		requestedTurns.add(pTurn);
+	}
+
+	/**
+	 * @return the requestedTurns
+	 */
+	public ArrayList<Turn> getRequestedTurns() {
+		return requestedTurns;
 	}
 
 	@Override

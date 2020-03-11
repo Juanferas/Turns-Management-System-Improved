@@ -15,6 +15,8 @@ public class Time {
 	
 	public Time() {
 		systemTime = LocalTime.now();
+		plusTime = LocalTime.of(0, 0);
+		minusTime = LocalTime.of(0, 0);
 	}
 
 	/**
@@ -32,10 +34,24 @@ public class Time {
 	}
 	
 	/**
+	 * @param plusTime the plusTime to set
+	 */
+	public void setPlusTime(LocalTime plusTime) {
+		this.plusTime = plusTime;
+	}
+
+	/**
+	 * @param minusTime the minusTime to set
+	 */
+	public void setMinusTime(LocalTime minusTime) {
+		this.minusTime = minusTime;
+	}
+
+	/**
 	 * @return the time in format hh:mm
 	 */
 	public String getTime() {
 		systemTime = LocalTime.now().plusHours(plusTime.getHour()).plusMinutes(plusTime.getMinute()).minusHours(minusTime.getHour()).minusMinutes(minusTime.getMinute());
-		return "Time: "+systemTime.toString();
+		return "Time: "+systemTime.toString().substring(0, systemTime.toString().indexOf("."));
 	}
 }

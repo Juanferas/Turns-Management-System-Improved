@@ -5,6 +5,9 @@ import java.time.*;
 
 public class ClientService {
 
+	/**
+	 * Descripción de los atributos.
+	 */
     private char letter;
 	private int num;
     private ArrayList<User> users;
@@ -12,6 +15,8 @@ public class ClientService {
 	private ArrayList<Turn> attendedTurns;
 	private ArrayList<Turn> notAttendedTurns;
 	private ArrayList<TurnType> turnTypes;
+	private model.Date systemDate;
+	private model.Time systemTime;
 
     public ClientService() {
         letter = 'A';
@@ -21,6 +26,8 @@ public class ClientService {
 		attendedTurns = new ArrayList<Turn>();
 		notAttendedTurns = new ArrayList<Turn>();
 		turnTypes = new ArrayList<TurnType>();
+		systemDate = new model.Date();
+		systemTime = new model.Time();
     }
 
     /**
@@ -108,6 +115,48 @@ public class ClientService {
 	}
 
 	/**
+	 * @return the turnTypes
+	 */
+	public ArrayList<TurnType> getTurnTypes() {
+		return turnTypes;
+	}
+
+	/**
+	 * @param turnTypes the turnTypes to set
+	 */
+	public void setTurnTypes(ArrayList<TurnType> turnTypes) {
+		this.turnTypes = turnTypes;
+	}
+
+	/**
+	 * @return the systemDate
+	 */
+	public model.Date getSystemDate() {
+		return systemDate;
+	}
+
+	/**
+	 * @param systemDate the systemDate to set
+	 */
+	public void setSystemDate(model.Date systemDate) {
+		this.systemDate = systemDate;
+	}
+
+	/**
+	 * @return the systemTime
+	 */
+	public model.Time getSystemTime() {
+		return systemTime;
+	}
+
+	/**
+	 * @param systemTime the systemTime to set
+	 */
+	public void setSystemTime(model.Time systemTime) {
+		this.systemTime = systemTime;
+	}
+
+	/**
 	 * This method receives a document number to verify if its exists in the system.
 	 * <b>pre:</b> An ArrayList that stores the users in the system has already been created.
 	 * <b>post:</b> It is known if the document number is repeated or not.
@@ -184,7 +233,10 @@ public class ClientService {
 				else {
 					turn = nextTurn();
 					users.get(i).assignTurn(turn);
-					actualTurns.add(new Turn(turn, users.get(i), turnTypes.get(turnType)));
+					users.get(i).setHasTurn(true);
+					Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType));
+					actualTurns.add(pturn);
+					users.get(i).addRequestedTurn(pturn);
 				}
 			}
 		}
@@ -232,7 +284,7 @@ public class ClientService {
 		}
 		else {
 			turnID = actualTurns.get(0).getTurnID();
-			notAttendedTurns.add(actualTurns.get(0));
+			attendedTurns.add(actualTurns.get(0));
 			actualTurns.remove(0);
 		}
 		return turnID;
@@ -247,18 +299,21 @@ public class ClientService {
 	 */
 	public void endTurn(int op, String turnID) {
 		Turn pturn = null;
-		for (int i=0; i<notAttendedTurns.size(); i++) {
-			if (notAttendedTurns.get(i).getTurnID()==(turnID)) {
-				notAttendedTurns.get(i).setInUse(false);
-				notAttendedTurns.get(i).getUser().setHasTurn(false);
-				notAttendedTurns.get(i).getUser().assignTurn("");
-				pturn = notAttendedTurns.get(i);
+		for (int i=0; i<attendedTurns.size(); i++) {
+			if (attendedTurns.get(i).getTurnID().equals(turnID)) {
+				attendedTurns.get(i).setInUse(false);
+				attendedTurns.get(i).getUser().setHasTurn(false);
+				attendedTurns.get(i).getUser().assignTurn("");
+				pturn = attendedTurns.get(i);
+				System.out.println("Turn terminated");
 				break;
 			}
 		}
 		if (op==1) {
-			notAttendedTurns.remove(pturn);
-			attendedTurns.add(pturn);
+			pturn.setStatusWhenCalled("User present when attended");
+		}
+		else {
+			pturn.setStatusWhenCalled("User not present when attended");
 		}
 	}
 
@@ -289,8 +344,81 @@ public class ClientService {
 	public String typesOfTurns() {
 		String types = "";
 		for (int i=0; i<turnTypes.size(); i++) {
-			types += "["+(i+1)+"] "+turnTypes.get(i).getName() + " " + turnTypes.get(i).getDuration() + " minutes.";
+			types = (i==0)?"\nTurn types:":types;
+			types += "\n["+(i+1)+"] "+turnTypes.get(i).getName() + " -> " + turnTypes.get(i).getDuration() + " minutes.";
 		}
 		return (types!="")?types:"<<There are no types of turns added yet>>";
+	}
+	
+	public String configurateCalendar(String strTime) {
+		String msj = "<<New time correctly configured>>";
+		if (strTime.split(":")[0].length()==1) {
+			strTime = "0"+strTime;
+		}
+		LocalTime time = LocalTime.parse(strTime);
+		LocalTime difference;
+		if (time.isBefore(LocalTime.now())) {
+			difference = LocalTime.now().minusHours(time.getHour()).minusMinutes(time.getMinute());
+			systemTime.setMinusTime(difference);
+			systemTime.setPlusTime(LocalTime.of(0, 0));
+		}
+		else if (time.isAfter(LocalTime.now())) {
+			difference = time.minusHours(LocalTime.now().getHour()).minusMinutes(LocalTime.now().getMinute());
+			systemTime.setPlusTime(difference);
+			systemTime.setMinusTime(LocalTime.of(0, 0));
+		}
+		return msj;
+	}
+	
+	public String configurateCalendar(int month, int day, int year) {
+		String msj = "<<New date correctly configured>>";
+		if (year>LocalDate.now().getYear()) {
+			systemDate.setYearsToSum(year-LocalDate.now().getYear());
+			systemDate.setYearsToSub(0);
+		} else {
+			systemDate.setYearsToSub(LocalDate.now().getYear()-year);
+			systemDate.setYearsToSum(0);
+		}
+		if (month>LocalDate.now().getMonthValue()) {
+			systemDate.setMonthsToSum(month-LocalDate.now().getMonthValue());
+			systemDate.setMonthsToSub(0);
+		} else {
+			systemDate.setMonthsToSub(LocalDate.now().getMonthValue()-month);
+			systemDate.setMonthsToSum(0);
+		}
+		if (day>LocalDate.now().getDayOfMonth()) {
+			systemDate.setDaysToSum(day-LocalDate.now().getDayOfMonth());
+			systemDate.setDaysToSub(0);
+		} else {
+			systemDate.setDaysToSub(LocalDate.now().getDayOfMonth()-day);
+			systemDate.setDaysToSum(0);
+		}
+		return msj;
+	}
+	
+	public String requestedTurnsReport(String id) {
+		String report = "";
+		User user = null;
+		for (int i=0; i<users.size(); i++) {
+			if (users.get(i).getDocumentNumber().equals(id)) {
+				user = users.get(i);
+			}
+		}
+		if (user.getRequestedTurns().size()==0) {
+			report = "<<This user hasn't requested any turn yet>>";
+		}
+		else {
+			report = "\nREQUESTED TURNS:";
+			for (int i=0; i<user.getRequestedTurns().size(); i++) {
+				report += "\n"+user.getRequestedTurns().get(i).getTurnID();
+				if (user.getRequestedTurns().get(i).isInUse()) {
+					report += " - not yet attended";
+				}
+				else {
+					report += " - attended ("+user.getRequestedTurns().get(i).getStatusWhenCalled()+")";
+				}
+			}
+		}
+		return report;
 	}
 }

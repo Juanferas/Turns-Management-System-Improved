@@ -6,12 +6,14 @@ public class Turn {
 	private User user;
 	private boolean inUse;
 	private TurnType type;
+	private String statusWhenCalled;
 
 	public Turn(String turnID, User user, TurnType type) {
 		this.turnID = turnID;
 		this.user = user;
 		this.type = type;
 		inUse = true;
+		statusWhenCalled = "";
 	}
 
 	/**
@@ -68,5 +70,19 @@ public class Turn {
 	 */
 	public void setType(TurnType type) {
 		this.type = type;
+	}
+
+	/**
+	 * @return the statusWhenCalled
+	 */
+	public String getStatusWhenCalled() {
+		return statusWhenCalled;
+	}
+
+	/**
+	 * @param statusWhenCalled the statusWhenCalled to set
+	 */
+	public void setStatusWhenCalled(String statusWhenCalled) {
+		this.statusWhenCalled = statusWhenCalled;
 	}
 }

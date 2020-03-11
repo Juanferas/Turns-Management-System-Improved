@@ -1,21 +1,16 @@
 package ui;
 import model.*;
-import java.time.*;
 import java.util.*;
 import customExceptions.*;
 
 public class Main {
 	
-	private model.Date systemDate;
-	private model.Time systemTime;
 	private Scanner sc;
 	private ClientService service;
 
 	public Main() {
 		sc = new Scanner(System.in);
 		service = new ClientService();
-		systemDate = new model.Date();
-		systemTime = new model.Time();
 	}
 
 	public static void main(String[] args) {
@@ -26,21 +21,10 @@ public class Main {
 		while (!endWhile) {
 			try {
 				while (!endWhile) {
-					if (obj.systemDate==null && obj.systemTime!=null) {
-						System.out.println("\nDate: <<Not yet configured>> | "+obj.systemTime.getTime());
-					}
-					else if (obj.systemDate!=null && obj.systemTime==null) {
-						System.out.println("\n"+obj.systemDate.getDate()+" | Time: <<Not yet configured>>");
-					}
-					else if (obj.systemDate==null && obj.systemTime==null) {
-						System.out.println("\nDate: <<Not yet configured>> | Time: <<Not yet configured>>");
-					}
-					else {
-						System.out.println("\n"+obj.systemDate.getDate()+" | "+obj.systemTime.getTime());
-					}
-					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend turn.\n[5] Configurate system Date and Time.\n[*] Exit.");
+					System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
+					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend all turns until current time and date.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[*] Exit.");
 					int op = Integer.valueOf(obj.sc.nextLine());
-					if(op!=1 && op!=2 && op!=3 && op!=4 && op!=5) {
+					if(op<1 || op>12) {
 						System.out.println("<<Invalid Input. Please try Again>>");
 						continue;
 					}
@@ -60,7 +44,16 @@ public class Main {
 						case 5:
 							obj.configurateCalendar();
 							break;
+						case 6:
+							System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
+							break;
+						case 7:
+							obj.requestedTurnsReport();
+							break;
 						case 8:
+							// Voy por aquí!
+							break;
+						case 12:
 							endWhile = true;
 							break;
 					}
@@ -214,6 +207,8 @@ public class Main {
 			switch (op) {
 				case 1:
 					int month = 0;
+					int day = 0;
+					int year = 0;
 					try {
 						System.out.print("\n[1] January.\n[2] February.\n[3] March.\n[4] April.\n[5] May.\n[6] June.\n[7] July.\n[8] August.\n[9] September.\n[10] October.\n[11] November.\n[12] December.\nMonth: ");
 						month = Integer.valueOf(sc.nextLine());
@@ -221,39 +216,45 @@ public class Main {
 							System.out.println("<<Invald input. Please try again>>");
 							break;
 						}
-					}
-					catch (Exception e) {
-						System.out.println("<<Invald input. Please try again>>");
-						break;
-					}
-					int day = 0;
-					try {
 						System.out.print("Day: ");
 						day = Integer.valueOf(sc.nextLine());
-					}
-					catch (Exception e) {
-						System.out.println("<<Invald input. Please try again>>");
-						break;
-					}
-					int year = 0;
-					try {
 						System.out.print("Year: ");
 						year = Integer.valueOf(sc.nextLine());
+						System.out.println(service.configurateCalendar(month, day, year));
+					}
+					catch (NumberFormatException nfe) {
+						System.out.println("<<Invald input. Please try again>>");
 					}
 					catch (Exception e) {
-						System.out.println("<<Invald input. Please try again>>");
-						break;
+						System.out.println("<<Date couldn't be configured>>");
 					}
-					systemDate = new model.Date(month, day, year);
 					break;
 				case 2:
-					// Aqui voy!
+					System.out.println("\nHour (hh:mm):");
+					String strTime = sc.nextLine();
+					try {
+						System.out.println(service.configurateCalendar(strTime));
+					}
+					catch (Exception e) {
+						System.out.println("<<Time couldn't be configured>>");
+					}
 					break;
 				case 3:
 					endWhile = true;
 					break;
 			}
 		}
-		
+	}
+	
+	public void requestedTurnsReport() {
+		System.out.print("\nDocument number: ");
+		String documentNumber = sc.nextLine();
+		try {
+			service.findUser(documentNumber);
+			System.out.println(service.requestedTurnsReport(documentNumber));
+			
+		} catch (UserNotFoundException unfe) {
+			System.out.println(unfe.getMessage());
+		}
 	}
 }
