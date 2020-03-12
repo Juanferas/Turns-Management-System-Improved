@@ -20,6 +20,14 @@ public class Time {
 	}
 
 	/**
+	 * @return the systemTime
+	 */
+	public LocalTime getSystemTime() {
+		systemTime = LocalTime.now().plusHours(plusTime.getHour()).plusMinutes(plusTime.getMinute()).minusHours(minusTime.getHour()).minusMinutes(minusTime.getMinute());
+		return systemTime;
+	}
+
+	/**
 	 * @return the hour
 	 */
 	public int getHour() {

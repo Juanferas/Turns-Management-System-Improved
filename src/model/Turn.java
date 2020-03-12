@@ -1,6 +1,6 @@
 package model;
 
-public class Turn {
+public class Turn implements Comparable {
 
 	private String turnID;
 	private User user;
@@ -84,5 +84,16 @@ public class Turn {
 	 */
 	public void setStatusWhenCalled(String statusWhenCalled) {
 		this.statusWhenCalled = statusWhenCalled;
+	}
+
+	@Override
+	public int compareTo(Object other) {
+		if (turnID.compareTo(((Turn)other).getTurnID())>0) {
+			return 1;
+		}
+		else if (turnID.compareTo(((Turn)other).getTurnID())<0) {
+			return -1;
+		}
+		return 0;
 	}
 }

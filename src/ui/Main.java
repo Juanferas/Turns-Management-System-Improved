@@ -22,7 +22,7 @@ public class Main {
 			try {
 				while (!endWhile) {
 					System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
-					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend all turns until current time and date.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[*] Exit.");
+					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend all turns until current time and date.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[9] Generate report with all persons who have requested a turn.\n[*] Exit.");
 					int op = Integer.valueOf(obj.sc.nextLine());
 					if(op<1 || op>12) {
 						System.out.println("<<Invalid Input. Please try Again>>");
@@ -51,7 +51,15 @@ public class Main {
 							obj.requestedTurnsReport();
 							break;
 						case 8:
-							// Voy por aquí!
+							obj.banUser();
+							break;
+						case 9:
+							try {
+								System.out.println(obj.service.AllTurnsReport());
+							} catch (Exception e) {
+								System.out.println("<<Couln't generate report>>");
+								System.out.println(e.getMessage());
+							}
 							break;
 						case 12:
 							endWhile = true;
@@ -251,8 +259,35 @@ public class Main {
 		String documentNumber = sc.nextLine();
 		try {
 			service.findUser(documentNumber);
-			System.out.println(service.requestedTurnsReport(documentNumber));
-			
+			System.out.println("\n[1] Show on screen.\n[2] Send to a file.");
+			int op = Integer.parseInt(sc.nextLine());
+			switch (op) {
+				case 1:
+					System.out.println(service.requestedTurnsReport(documentNumber, op));
+					break;
+				case 2:
+					if (service.requestedTurnsReport(documentNumber, op).equals("<<This user hasn't requested any turn yet>>")) {
+						System.out.println(service.requestedTurnsReport(documentNumber, op));
+					}
+					else {
+						System.out.println("<<You can find the report on the following path: /Laboratorio2_AP2/data/"+documentNumber+".report>>");
+					}
+					break;
+			}		
+		} catch (UserNotFoundException unfe) {
+			System.out.println(unfe.getMessage());
+		} catch (Exception e) {
+			System.out.println("<<Couln't generate report>>");
+			System.out.println(e.getMessage());
+		}
+	}
+	
+	public void banUser() {
+		System.out.print("\nDocument number: ");
+		String documentNumber = sc.nextLine();
+		try {
+			service.findUser(documentNumber);
+			System.out.println(service.banUser(documentNumber));
 		} catch (UserNotFoundException unfe) {
 			System.out.println(unfe.getMessage());
 		}

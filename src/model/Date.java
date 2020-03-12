@@ -34,6 +34,17 @@ public class Date {
 	}
 	
 	/**
+	 * @return the systemDate
+	 */
+	public LocalDate getSystemDate() {
+		systemDate = LocalDate.now();
+		systemDate = (daysToSub!=0)?systemDate.minusDays(daysToSub):(daysToSum!=0)?systemDate.plusDays(daysToSum):systemDate;
+		systemDate = (monthsToSub!=0)?systemDate.minusMonths(monthsToSub):(monthsToSum!=0)?systemDate.plusMonths(monthsToSum):systemDate;
+		systemDate = (yearsToSub!=0)?systemDate.minusYears(yearsToSub):(yearsToSum!=0)?systemDate.plusYears(yearsToSum):systemDate;
+		return systemDate;
+	}
+
+	/**
 	 * @return the month
 	 */
 	public String getMonth() {

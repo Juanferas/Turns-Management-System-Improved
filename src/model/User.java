@@ -1,5 +1,6 @@
 package model;
 import java.util.*;
+import java.time.*;
 
 public class User {
 
@@ -11,6 +12,7 @@ public class User {
 	private String assignedTurn;
 	private boolean hasTurn;
 	private ArrayList<Turn> requestedTurns;
+	private LocalDateTime bannedUntil;
 
 	public User(String documentType, String documentNumber, String name, String lastNames, String phone, String address) {
 		this.documentType = documentType;
@@ -22,6 +24,7 @@ public class User {
 		assignedTurn = "";
 		hasTurn = false;
 		requestedTurns = new ArrayList<Turn>();
+		bannedUntil = null;
 	}
 
 	/**
@@ -145,6 +148,20 @@ public class User {
 	 */
 	public ArrayList<Turn> getRequestedTurns() {
 		return requestedTurns;
+	}
+
+	/**
+	 * @return the time until the user is banned
+	 */
+	public LocalDateTime getBannedUntil() {
+		return bannedUntil;
+	}
+
+	/**
+	 * @param bannedUntil the time until the user is banned to set
+	 */
+	public void setBannedUntil(LocalDateTime bannedUntil) {
+		this.bannedUntil = bannedUntil;
 	}
 
 	@Override

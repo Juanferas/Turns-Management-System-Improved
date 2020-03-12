@@ -2,6 +2,7 @@ package model;
 import java.util.*;
 import customExceptions.*;
 import java.time.*;
+import java.io.*;
 
 public class ClientService {
 
@@ -13,7 +14,6 @@ public class ClientService {
     private ArrayList<User> users;
 	private ArrayList<Turn> actualTurns;
 	private ArrayList<Turn> attendedTurns;
-	private ArrayList<Turn> notAttendedTurns;
 	private ArrayList<TurnType> turnTypes;
 	private model.Date systemDate;
 	private model.Time systemTime;
@@ -24,7 +24,6 @@ public class ClientService {
 		users = new ArrayList<User>();
 		actualTurns = new ArrayList<Turn>();
 		attendedTurns = new ArrayList<Turn>();
-		notAttendedTurns = new ArrayList<Turn>();
 		turnTypes = new ArrayList<TurnType>();
 		systemDate = new model.Date();
 		systemTime = new model.Time();
@@ -98,20 +97,6 @@ public class ClientService {
 	 */
 	public void setAttendedTurns(ArrayList<Turn> attendedTurns) {
 		this.attendedTurns = attendedTurns;
-	}
-
-	/**
-	 * @return the notAttendedTurns
-	 */
-	public ArrayList<Turn> getNotAttendedTurns() {
-		return notAttendedTurns;
-	}
-
-	/**
-	 * @param notAttendedTurns the notAttendedTurns to set
-	 */
-	public void setNotAttendedTurns(ArrayList<Turn> notAttendedTurns) {
-		this.notAttendedTurns = notAttendedTurns;
 	}
 
 	/**
@@ -225,10 +210,27 @@ public class ClientService {
 	 */
     public String assignTurn(String id, int turnType) throws UserAlreadyHasTurnException{
 		String turn = "";
+		String msj = "";
 		for (int i = 0; i < users.size(); i++) {
 			if (users.get(i).getDocumentNumber().equals(id)) {
 				if (users.get(i).hasTurn()) {
 					throw new UserAlreadyHasTurnException(id, users.get(i).getAssignedTurn());
+				}
+				else if (users.get(i).getBannedUntil()!=null) {
+					LocalDateTime now = LocalDateTime.of(systemDate.getSystemDate(), systemTime.getSystemTime());
+					if (users.get(i).getBannedUntil().isAfter(now)) {
+						msj = "<<User is banned until "+users.get(i).getBannedUntil().toString()+">>";
+					}
+					else {
+						turn = nextTurn();
+						users.get(i).assignTurn(turn);
+						users.get(i).setHasTurn(true);
+						Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType));
+						actualTurns.add(pturn);
+						users.get(i).addRequestedTurn(pturn);
+						users.get(i).setBannedUntil(null);
+						msj = "<<Turn assigned correctly ["+turn+"] type: "+turnTypes.get(turnType).getName()+" - duration: "+turnTypes.get(turnType).getDuration()+" minutes>>";
+					}
 				}
 				else {
 					turn = nextTurn();
@@ -237,10 +239,11 @@ public class ClientService {
 					Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType));
 					actualTurns.add(pturn);
 					users.get(i).addRequestedTurn(pturn);
+					msj = "<<Turn assigned correctly ["+turn+"] type: "+turnTypes.get(turnType).getName()+" - duration: "+turnTypes.get(turnType).getDuration()+" minutes>>";
 				}
 			}
 		}
-		return "<<Turn assigned correctly ["+turn+"] type: "+turnTypes.get(turnType).getName()+" - duration: "+turnTypes.get(turnType).getDuration()+" minutes>>";
+		return msj;
 	}
 
     /**
@@ -305,7 +308,6 @@ public class ClientService {
 				attendedTurns.get(i).getUser().setHasTurn(false);
 				attendedTurns.get(i).getUser().assignTurn("");
 				pturn = attendedTurns.get(i);
-				System.out.println("Turn terminated");
 				break;
 			}
 		}
@@ -396,7 +398,9 @@ public class ClientService {
 		return msj;
 	}
 	
-	public String requestedTurnsReport(String id) {
+	public String requestedTurnsReport(String id, int op) throws IOException, FileNotFoundException{
+		File userTurns = new File("data/"+id+".report");
+		BufferedWriter bw = new BufferedWriter(new FileWriter(userTurns));
 		String report = "";
 		User user = null;
 		for (int i=0; i<users.size(); i++) {
@@ -408,17 +412,72 @@ public class ClientService {
 			report = "<<This user hasn't requested any turn yet>>";
 		}
 		else {
-			report = "\nREQUESTED TURNS:";
+			report = "\n------REQUESTED TURNS------";
+			if (op==2) {
+				bw.write("USER'S DOCUMENT NUMBER: "+id+"\n");
+				bw.write("\n------REQUESTED TURNS------");
+			}
 			for (int i=0; i<user.getRequestedTurns().size(); i++) {
 				report += "\n"+user.getRequestedTurns().get(i).getTurnID();
+				if (op==2) {
+					bw.write("\n"+user.getRequestedTurns().get(i).getTurnID());
+				}
 				if (user.getRequestedTurns().get(i).isInUse()) {
 					report += " - not yet attended";
+					if (op==2) {
+						bw.write(" - not yet attended");
+					}
 				}
 				else {
 					report += " - attended ("+user.getRequestedTurns().get(i).getStatusWhenCalled()+")";
+					if (op==2) {
+						bw.write(" - attended ("+user.getRequestedTurns().get(i).getStatusWhenCalled()+")");
+					}
 				}
 			}
 		}
+		bw.close();
 		return report;
+	}
+	
+	public String banUser(String id) {
+		String msj = "";
+		User user = null;
+		for (int i=0; i<users.size(); i++) {
+			if (users.get(i).getDocumentNumber().contentEquals(id)) {
+				user = users.get(i);
+			}
+		}
+		if (user.getRequestedTurns().size()>=2) {
+			if (user.getRequestedTurns().get(user.getRequestedTurns().size()-1).getStatusWhenCalled().equals("User not present when attended") && user.getRequestedTurns().get(user.getRequestedTurns().size()-2).getStatusWhenCalled().equals("User not present when attended")) {
+				LocalDateTime banTime = LocalDateTime.now().plusDays(2);
+				msj = "<<User banned until "+banTime.toString()+">>";
+				user.setBannedUntil(banTime);
+			}
+			else {
+				msj = "<<User doesn't meet the requirements to be banned>>";
+			}
+		}
+		else {
+			msj = "<<User doesn't meet the requirements to be banned>>";
+		}
+		return msj;
+	}
+	
+	public String AllTurnsReport() throws IOException {
+		// Aquí voy! Sort by userDocumentNumber, userName?, turnID, turnTime, turnType
+		File allTurns = new File("data/AllRequestedTurns.report");
+		BufferedWriter bw = new BufferedWriter(new FileWriter(allTurns));
+		ArrayList<Turn> totalTurns = new ArrayList<Turn>();
+		totalTurns.addAll(actualTurns);
+		totalTurns.addAll(attendedTurns);
+		Arrays.sort(totalTurns.toArray());
+		bw.write("ALL REQUESTED TURNS\n");
+		for (int i=0; i<attendedTurns.size(); i++) {
+			bw.write("Turn: "+totalTurns.get(i).getTurnID()+" -> User: "+totalTurns.get(i).getUser().getDocumentNumber()+"\n");
+		}
+		bw.close();
+		String msj = (totalTurns.size()==0)?"<<There are no registered turns yet>>":"<<You can find the report on the following path: /Laboratorio2_AP2/data/AllRequestedTurns.report>>";
+		return msj;
 	}
 }
