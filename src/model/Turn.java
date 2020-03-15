@@ -1,19 +1,22 @@
 package model;
+import java.time.*;
 
-public class Turn implements Comparable {
+public class Turn implements Comparable<Turn>{
 
 	private String turnID;
 	private User user;
 	private boolean inUse;
 	private TurnType type;
 	private String statusWhenCalled;
+	private LocalTime requestedAt;
 
-	public Turn(String turnID, User user, TurnType type) {
+	public Turn(String turnID, User user, TurnType type, LocalTime timeRequested) {
 		this.turnID = turnID;
 		this.user = user;
 		this.type = type;
 		inUse = true;
 		statusWhenCalled = "";
+		requestedAt = timeRequested;
 	}
 
 	/**
@@ -86,13 +89,27 @@ public class Turn implements Comparable {
 		this.statusWhenCalled = statusWhenCalled;
 	}
 
+	/**
+	 * @return the requestedAt
+	 */
+	public LocalTime getRequestedAt() {
+		return requestedAt;
+	}
+
+	/**
+	 * @param requestedAt the requestedAt to set
+	 */
+	public void setRequestedAt(LocalTime requestedAt) {
+		this.requestedAt = requestedAt;
+	}
+
 	@Override
-	public int compareTo(Object other) {
-		if (turnID.compareTo(((Turn)other).getTurnID())>0) {
-			return 1;
-		}
-		else if (turnID.compareTo(((Turn)other).getTurnID())<0) {
+	public int compareTo(Turn other) {
+		if (turnID.compareTo(other.getTurnID())<0) {
 			return -1;
+		}
+		else if (turnID.compareTo(other.getTurnID())>0) {
+			return 1;
 		}
 		return 0;
 	}

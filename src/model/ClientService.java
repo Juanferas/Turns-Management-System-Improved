@@ -17,6 +17,8 @@ public class ClientService {
 	private ArrayList<TurnType> turnTypes;
 	private model.Date systemDate;
 	private model.Time systemTime;
+	private LocalTime attentionTime;
+	private boolean onWait;
 
     public ClientService() {
         letter = 'A';
@@ -27,6 +29,8 @@ public class ClientService {
 		turnTypes = new ArrayList<TurnType>();
 		systemDate = new model.Date();
 		systemTime = new model.Time();
+		attentionTime = null;
+		onWait = false;
     }
 
     /**
@@ -225,7 +229,8 @@ public class ClientService {
 						turn = nextTurn();
 						users.get(i).assignTurn(turn);
 						users.get(i).setHasTurn(true);
-						Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType));
+						Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType), LocalTime.now());
+						attentionTime = (attentionTime==null)?LocalTime.now():attentionTime;
 						actualTurns.add(pturn);
 						users.get(i).addRequestedTurn(pturn);
 						users.get(i).setBannedUntil(null);
@@ -236,7 +241,8 @@ public class ClientService {
 					turn = nextTurn();
 					users.get(i).assignTurn(turn);
 					users.get(i).setHasTurn(true);
-					Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType));
+					Turn pturn = new Turn(turn, users.get(i), turnTypes.get(turnType), LocalTime.now());
+					attentionTime = (attentionTime==null)?LocalTime.now():attentionTime;
 					actualTurns.add(pturn);
 					users.get(i).addRequestedTurn(pturn);
 					msj = "<<Turn assigned correctly ["+turn+"] type: "+turnTypes.get(turnType).getName()+" - duration: "+turnTypes.get(turnType).getDuration()+" minutes>>";
@@ -265,7 +271,7 @@ public class ClientService {
 			num = 0;
 			turn = letter+"0"+String.valueOf(num);
 		}
-		else if (num>10) {
+		else if (num>=10) {
 			turn = letter+String.valueOf(num);
 		}
 		else {
@@ -322,15 +328,6 @@ public class ClientService {
 	public String addNewTypeOfTurn(String name, String dur) {
 		String msj = "";
 		float duration = Float.parseFloat(dur);
-		/*
-		LocalTime duration;
-		if (dur.contains(".")) {
-			duration = LocalTime.of(0, Integer.parseInt(dur.split(".")[0]), Integer.parseInt(dur.split(".")[1]));
-		}
-		else {
-			duration = LocalTime.of(0, Integer.parseInt(dur.split(".")[0]));
-		}
-		*/
 		for (int i=0; i<turnTypes.size(); i++) {
 			if (turnTypes.get(i).getName().equals(name)) {
 				msj = "<<A turn type with this name already exists>>";
@@ -349,7 +346,7 @@ public class ClientService {
 			types = (i==0)?"\nTurn types:":types;
 			types += "\n["+(i+1)+"] "+turnTypes.get(i).getName() + " -> " + turnTypes.get(i).getDuration() + " minutes.";
 		}
-		return (types!="")?types:"<<There are no types of turns added yet>>";
+		return (types!="")?types:"<<There are no turn types added yet>>";
 	}
 	
 	public String configurateCalendar(String strTime) {
@@ -368,6 +365,9 @@ public class ClientService {
 			difference = time.minusHours(LocalTime.now().getHour()).minusMinutes(LocalTime.now().getMinute());
 			systemTime.setPlusTime(difference);
 			systemTime.setMinusTime(LocalTime.of(0, 0));
+		}
+		for (int i=0; i<actualTurns.size(); i++) {
+			endTurn((int)(Math.random()*2), getActualTurn());
 		}
 		return msj;
 	}
@@ -395,12 +395,19 @@ public class ClientService {
 			systemDate.setDaysToSub(LocalDate.now().getDayOfMonth()-day);
 			systemDate.setDaysToSum(0);
 		}
+		for (int i=0; i<actualTurns.size(); i++) {
+			endTurn((int)(Math.random()*2), getActualTurn());
+		}
 		return msj;
 	}
 	
 	public String requestedTurnsReport(String id, int op) throws IOException, FileNotFoundException{
-		File userTurns = new File("data/"+id+".report");
-		BufferedWriter bw = new BufferedWriter(new FileWriter(userTurns));
+		File userTurns = null;
+		BufferedWriter bw = null;
+		if (op==2) {
+			userTurns = new File("data/"+id+".report");
+			bw = new BufferedWriter(new FileWriter(userTurns));
+		}
 		String report = "";
 		User user = null;
 		for (int i=0; i<users.size(); i++) {
@@ -464,20 +471,175 @@ public class ClientService {
 		return msj;
 	}
 	
-	public String AllTurnsReport() throws IOException {
-		// Aquí voy! Sort by userDocumentNumber, userName?, turnID, turnTime, turnType
-		File allTurns = new File("data/AllRequestedTurns.report");
-		BufferedWriter bw = new BufferedWriter(new FileWriter(allTurns));
+	public String AllTurnsReport(int op, int op2) throws IOException {
+		String msj = "";
+		BufferedWriter bw = null;
+		if (op2==2) {
+			File allTurns = new File("data/AllRequestedTurns.report");
+			bw = new BufferedWriter(new FileWriter(allTurns));
+		}
 		ArrayList<Turn> totalTurns = new ArrayList<Turn>();
 		totalTurns.addAll(actualTurns);
 		totalTurns.addAll(attendedTurns);
-		Arrays.sort(totalTurns.toArray());
-		bw.write("ALL REQUESTED TURNS\n");
-		for (int i=0; i<attendedTurns.size(); i++) {
-			bw.write("Turn: "+totalTurns.get(i).getTurnID()+" -> User: "+totalTurns.get(i).getUser().getDocumentNumber()+"\n");
+		switch (op) {
+			case 1: // Bubble Sort by turn ID using comparable interface
+				for (int i=totalTurns.size(); i>0; i--) {
+					for (int j=0; j<i-1; j++) {
+						if (totalTurns.get(j).compareTo(totalTurns.get(j+1))>0) {
+							Turn temp = totalTurns.get(j);
+							totalTurns.set(j, totalTurns.get(j+1));
+							totalTurns.set(j+1, temp);
+						}
+					}
+				}
+				break;
+			case 2: // Sort by turn duration with Comparator as an external class
+				totalTurns.sort(new TurnComparatorByTime());
+				break;
+			case 3: // Reverse order sort by turn duration with Comparator as an external class
+				totalTurns.sort(Collections.reverseOrder(new TurnComparatorByTime()));
+				break;
+			case 4: // Sort by turn type with Comparator as an anonymous class
+				totalTurns.sort(new Comparator<Turn>() {
+					public int compare (Turn turn1, Turn turn2) {
+						if (turn1.getType().getName().compareTo(turn2.getType().getName())<0) {
+							return -1;
+						}
+						else if (turn1.getType().getName().compareTo(turn2.getType().getName())>0) {
+							return 1;
+						}
+						return 0;
+					}
+				});
+				break;
+			case 5: // Selection sort by user document number with String compareTo Comparator
+				for (int i=0; i<totalTurns.size()-1; i++) {
+					int minIdx = i;
+					for (int j=i+1; j<totalTurns.size(); j++) {
+						if (totalTurns.get(j).getUser().getDocumentNumber().compareTo(totalTurns.get(minIdx).getUser().getDocumentNumber())<0) {
+							minIdx = j;
+						}
+					}
+					Turn temp = totalTurns.get(i);
+					totalTurns.set(i, totalTurns.get(minIdx));
+					totalTurns.set(minIdx, temp);
+				}
+				break;
 		}
-		bw.close();
-		String msj = (totalTurns.size()==0)?"<<There are no registered turns yet>>":"<<You can find the report on the following path: /Laboratorio2_AP2/data/AllRequestedTurns.report>>";
+		if (op2==2) {
+			bw.write("ALL REQUESTED TURNS\n\n");
+		}
+		else {
+			msj = "\n-------ALL REQUESTED TURNS-------\n";
+		}
+		for (int i=0; i<totalTurns.size(); i++) {
+			if (op2==2) {
+				bw.write("Turn: "+totalTurns.get(i).getTurnID()+" - Type: "+totalTurns.get(i).getType().getName()+" - Duration: "+totalTurns.get(i).getType().getDuration()+" - User document: "+totalTurns.get(i).getUser().getDocumentNumber()+"\n");
+			}
+			else {
+				msj += "Turn: "+totalTurns.get(i).getTurnID()+" - Type: "+totalTurns.get(i).getType().getName()+" - Duration: "+totalTurns.get(i).getType().getDuration()+" - User document: "+totalTurns.get(i).getUser().getDocumentNumber()+"\n";
+			}
+		}
+		if (op2==2) {
+			bw.close();
+		}
+		msj = (totalTurns.size()==0)?"<<There aren't any turns registered yet>>":(msj.equals(""))?"<<You can find the report on the following path: /Laboratorio2_AP2/data/AllRequestedTurns.report>>":msj;
+		return msj;
+	}
+	
+	public String generateRandomUsers(int num) throws IOException, FileNotFoundException{
+		String msj = "<<"+num+" random users correctly registered>>";
+		String[] documentTypes = {"Citizenship card", "Identity card", "Civil registration", "Passport", "Foreign identity card"};
+		for (int i=0; i<num; i++) {
+			System.out.println("entra");
+			BufferedReader nameReader = new BufferedReader(new FileReader("data/NAMES.txt"));
+			BufferedReader lastNameReader = new BufferedReader(new FileReader("data/LAST_NAMES.txt"));
+			int num1 = (int)(Math.random()*1000)+1;
+			int num2 = (int)(Math.random()*1000)+1;
+			for (int j=0; j<num1; j++) {
+				nameReader.readLine();
+			}
+			String name = nameReader.readLine();
+			for (int j=0; j<num2; j++) {
+				lastNameReader.readLine();
+			}
+			String lastName = lastNameReader.readLine();
+			int num3 = (int)(Math.random()*5);
+			String documentNumber = String.valueOf((int)(Math.random()*10e8));
+			users.add(new User(documentTypes[num3], documentNumber, name, lastName, "Not given", "Not given"));
+			nameReader.close();
+			lastNameReader.close();
+		}
+		return msj; 
+	}
+	
+	public String randomlyAssociateTurns(int num) throws UserAlreadyHasTurnException{
+		String msj = "<<"+num+" turns correctly associated>>";
+		if (turnTypes.size()==0) {
+			msj = ("<<There are no turn types added yet>>");
+		}
+		else {
+			if (num>users.size()) {
+				msj = "<<The number of turns exceeds the amount of users registered in the system>>";
+			}
+			else {
+				for (int i=0; i<num; i++) {
+					int type = (int)(Math.random()*turnTypes.size());
+					assignTurn(users.get(i).getDocumentNumber(), type);
+					//assignTurn(users.get((int)(Math.random()*users.size())).getDocumentNumber(), type);
+					//endTurn((int)(Math.random()*2), getActualTurn());
+				}
+			}
+		}
+		return msj;
+	}
+	
+	public String attendTurnsUntilCurrentTime() {
+		String msj = "";
+		LocalTime time = systemTime.getSystemTime();
+		if (actualTurns.size()==0) {
+			msj = "<<There are no turns to attend>>";
+		}
+		for (int i=0; i<actualTurns.size();) {
+			if (onWait) {
+				if(time.isAfter(attentionTime.plusSeconds(15))) {
+					attentionTime.plusSeconds(15);
+					onWait = false;
+					msj += "+ 15 seconds of wait\n";
+				}
+				else {
+					attentionTime = actualTurns.get(i).getRequestedAt();
+					break;
+				}
+			}
+			LocalTime turnTime = actualTurns.get(i).getType().getDurationInTime();
+			if (time.isAfter(attentionTime.plusHours(turnTime.getHour()).plusMinutes(turnTime.getMinute()).plusSeconds(turnTime.getSecond()))) {
+				attentionTime.plusHours(turnTime.getHour()).plusMinutes(turnTime.getMinute()).plusSeconds(turnTime.getSecond());
+				String turnID = actualTurns.get(i).getTurnID();
+				attendedTurns.add(actualTurns.get(i));
+				actualTurns.remove(i);
+				endTurn((int)(Math.random()*2), turnID);
+				onWait = true;
+				msj += "Turn "+turnID+" attended\n";
+			}
+			else {
+				attentionTime = actualTurns.get(i).getRequestedAt();
+				break;
+			}
+			if (onWait && time.isAfter(attentionTime.plusSeconds(15))) {
+				attentionTime.plusSeconds(15);
+				onWait = false;
+				msj += "+ 15 seconds of wait\n";
+				if (actualTurns.size()==0) {
+					attentionTime = null;
+				}
+			}
+			else {
+				attentionTime = (actualTurns.size()==0)?null:actualTurns.get(i).getRequestedAt();
+				break;
+			}
+		}
+		msj = (msj=="")?"<<No turns could be attended yet>>":msj;
 		return msj;
 	}
 }

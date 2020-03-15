@@ -1,5 +1,7 @@
 package ui;
 import model.*;
+
+import java.time.LocalDate;
 import java.util.*;
 import customExceptions.*;
 
@@ -21,8 +23,10 @@ public class Main {
 		while (!endWhile) {
 			try {
 				while (!endWhile) {
+					long start = 0;
+					//long end = 0;
 					System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
-					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend all turns until current time and date.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[9] Generate report with all persons who have requested a turn.\n[*] Exit.");
+					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend next turn.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[9] Generate report with all persons who have requested a turn.\n[10] Generate random users registered.\n[11] Randomly assign turns to registered users.\n[12] Attend turns until current time.\n[13] Exit.");
 					int op = Integer.valueOf(obj.sc.nextLine());
 					if(op<1 || op>12) {
 						System.out.println("<<Invalid Input. Please try Again>>");
@@ -30,38 +34,67 @@ public class Main {
 					}
 					switch (op) {
 						case 1:
+							start = System.currentTimeMillis();
 							obj.registerUser();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 2:
+							start = System.currentTimeMillis();
 							obj.createNewTurnType();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 3:
+							start = System.currentTimeMillis();
 							obj.registerTurn();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 4:
+							start = System.currentTimeMillis();
 							obj.attendTurn();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 5:
+							start = System.currentTimeMillis();
 							obj.configurateCalendar();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 6:
-							System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
+							start = System.currentTimeMillis();
+							System.out.println("\n------SYSTEM'S DATE AND TIME------\n"+obj.service.getSystemDate().getDate()+" - "+obj.service.getSystemTime().getTime());
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 7:
+							start = System.currentTimeMillis();
 							obj.requestedTurnsReport();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 8:
+							start = System.currentTimeMillis();
 							obj.banUser();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 9:
-							try {
-								System.out.println(obj.service.AllTurnsReport());
-							} catch (Exception e) {
-								System.out.println("<<Couln't generate report>>");
-								System.out.println(e.getMessage());
-							}
+							start = System.currentTimeMillis();
+							obj.AllTurnsReport();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
+							break;
+						case 10:
+							start = System.currentTimeMillis();
+							obj.generateRandomUsers();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
+							break;
+						case 11:
+							start = System.currentTimeMillis();
+							obj.randomlyAssociateTurns();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 12:
+							start = System.currentTimeMillis();
+							obj.attendTurnsUntilCurrentTime();
+							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
+							break;
+						case 13:
+							start = System.currentTimeMillis();
 							endWhile = true;
 							break;
 					}
@@ -156,9 +189,14 @@ public class Main {
 				}
 			}
 			if (op==1) {
-				System.out.println(service.typesOfTurns());
-				int turnType = Integer.parseInt(sc.nextLine())-1;
-				System.out.println(service.assignTurn(documentNumber, turnType));
+				if (service.typesOfTurns().equals("<<There are no turn types added yet>>")) {
+					System.out.println(service.typesOfTurns());
+				}
+				else {
+					System.out.println(service.typesOfTurns());
+					int turnType = Integer.parseInt(sc.nextLine())-1;
+					System.out.println(service.assignTurn(documentNumber, turnType));
+				}
 			}
 		}
 		catch (UserNotFoundException unfe) {
@@ -182,7 +220,7 @@ public class Main {
 		else {
 			while (true) {
 				try {
-					System.out.println("\nActual turn: "+turnID+"\n[1]Turn attended.\n[2]User not present.");
+					System.out.println("\nActual turn: "+turnID+"\n[1]User present.\n[2]User not present.");
 					int op = Integer.valueOf(sc.nextLine());
 					if(op!=1 && op!=2) {
 						System.out.println("<<Invalid Input. Please try Again>>");
@@ -228,6 +266,7 @@ public class Main {
 						day = Integer.valueOf(sc.nextLine());
 						System.out.print("Year: ");
 						year = Integer.valueOf(sc.nextLine());
+						LocalDate test = LocalDate.of(year, month, day);
 						System.out.println(service.configurateCalendar(month, day, year));
 					}
 					catch (NumberFormatException nfe) {
@@ -249,6 +288,9 @@ public class Main {
 					break;
 				case 3:
 					endWhile = true;
+					break;
+				default:
+					System.out.println("<<Invald input. Please try again>>");
 					break;
 			}
 		}
@@ -273,12 +315,16 @@ public class Main {
 						System.out.println("<<You can find the report on the following path: /Laboratorio2_AP2/data/"+documentNumber+".report>>");
 					}
 					break;
+				default:
+					System.out.println("<<Invald input. Please try again>>");
+					break;
 			}		
 		} catch (UserNotFoundException unfe) {
 			System.out.println(unfe.getMessage());
+		} catch (NumberFormatException nfe) {
+			System.out.println("<<Invald input. Please try again>>");
 		} catch (Exception e) {
 			System.out.println("<<Couln't generate report>>");
-			System.out.println(e.getMessage());
 		}
 	}
 	
@@ -291,5 +337,63 @@ public class Main {
 		} catch (UserNotFoundException unfe) {
 			System.out.println(unfe.getMessage());
 		}
+	}
+	
+	public void AllTurnsReport() {
+		while (true) {
+			try {
+				System.out.println("\n[1] Sort by turn ID.\n[2] Sort by turn duration (ascendant).\n[3] Sort by turn duration (descendant).\n[4] Sorty by turn type.\n[5] Sort by user document number.");
+				int op = Integer.parseInt(sc.nextLine());
+				if (op<1 || op>5) {
+					System.out.println("<<Invald input. Please try again>>");
+					continue;
+				}
+				else {
+					System.out.println("\n[1] Show on screen.\n[2] Send to a file.");
+					int op2 = Integer.parseInt(sc.nextLine());
+					switch (op2) {
+						case 1:
+							System.out.println(service.AllTurnsReport(op, op2));
+							break;
+						case 2:
+							System.out.println(service.AllTurnsReport(op, op2));
+							break;
+						default:
+							System.out.println("<<Invald input. Please try again>>");
+							break;
+					}
+					break;
+				}
+			} catch (NumberFormatException nfe) {
+				System.out.println("<<Invald input. Please try again>>");
+			} catch (Exception e) {
+				System.out.println("<<Couln't generate report>>");
+				break;
+			}
+		}
+	}
+	
+	public void generateRandomUsers() {
+		System.out.print("\nHow many users do you want to register: ");
+		int num = Integer.parseInt(sc.nextLine());
+		try {
+			System.out.println(service.generateRandomUsers(num));
+		} catch (Exception e) {
+			System.out.println("<<Couldn't register the users>>");
+		}
+	}
+	
+	public void randomlyAssociateTurns() {
+		System.out.println("\nHow many turns do you want to randomly associate to registered users: ");
+		int num = Integer.parseInt(sc.nextLine());
+		try {
+			System.out.println(service.randomlyAssociateTurns(num));
+		} catch (UserAlreadyHasTurnException e) {
+			System.out.println(e);
+		}
+	}
+	
+	public void attendTurnsUntilCurrentTime() {
+		System.out.println(service.attendTurnsUntilCurrentTime());
 	}
 }

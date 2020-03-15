@@ -56,10 +56,11 @@ public class Time {
 	}
 
 	/**
-	 * @return the time in format hh:mm
+	 * @return the time in format hh:mm:ss
 	 */
 	public String getTime() {
 		systemTime = LocalTime.now().plusHours(plusTime.getHour()).plusMinutes(plusTime.getMinute()).minusHours(minusTime.getHour()).minusMinutes(minusTime.getMinute());
-		return "Time: "+systemTime.toString().substring(0, systemTime.toString().indexOf("."));
+		return "Time: "+systemTime.getHour()+":"+((systemTime.getMinute()<10)?("0"+systemTime.getMinute()):systemTime.getMinute())+":"+((systemTime.getSecond()<10)?("0"+systemTime.getSecond()):systemTime.getSecond());
+		//systemTime.toString().substring(0, systemTime.toString().indexOf("."));
 	}
 }
