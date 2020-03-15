@@ -4,10 +4,19 @@ import customExceptions.*;
 import java.time.*;
 import java.io.*;
 
-public class ClientService {
+@SuppressWarnings("serial")
+public class ClientService implements Serializable{
 
 	/**
-	 * Descripción de los atributos.
+	 * letter corresponds to the letter of the generated turns.
+	 * num corresponds to the number of the generated turns.
+	 * actualTurns stores the turns that haven't been attended yet.
+	 * attendedTurns stores the turns that have already been attended.
+	 * turnTypes stores the turn types that have been created.
+	 * systemDate corresponds to the date of the system.
+	 * systemTime correspond to the time of the system.
+	 * attentionTime correspond to the current attention time of turns
+	 * onWait indicates is the wait of 15 seconds between turn attendance was done.
 	 */
     private char letter;
 	private int num;
@@ -191,6 +200,7 @@ public class ClientService {
      */
 	public String findUser(String id) throws UserNotFoundException{
 		String userFound = "";
+		// Sequential search
 		for (int i = 0; i < users.size(); i++) {
 			if (users.get(i).getDocumentNumber().equals(id)) {
 				userFound = "\n-------USER-------\n"+users.get(i).toString();
@@ -209,6 +219,7 @@ public class ClientService {
      * <b>pre:</b> An ArrayList that stores the users in the system has already been created.
 	 * <b>post:</b> Next turn available is correctly assigned to the desired user.
 	 * @param id is a String that correspond to the user id to register a turn.
+	 * @param turnType is an int that indicates the turn type to assign to the turn.
 	 * @return String indicating that the turn has been correctly assigned and its number.
 	 * @throws UserAlreadyHasTurnException
 	 */
@@ -301,7 +312,7 @@ public class ClientService {
 
 	/**
 	 * This method ends a turn and places it where it corresponds.
-	 * <b>pre:</b> ArrayLists that stores the attended turns and not attended turns have already been created.
+	 * <b>pre:</b> An ArrayLists that stores the attended turns and not attended turns have already been created.
 	 * <b>post:</b> A given turn is ended and placed where it corresponds.
 	 * @param op is an int that corresponds to the option chose by the user.
 	 * @param turnID is a String that corresponds to the turn id to end.
@@ -325,6 +336,14 @@ public class ClientService {
 		}
 	}
 
+	/**
+	 * This method creates and add a new type of turn to the system.
+	 * <b>pre:</b> An ArrayLists that stores the types of turns have already been created.
+	 * <b>post:</b> A new type of turn is created and added to the system.
+	 * @param name is a String that corresponds to the name of the type of turn.
+	 * @param durname is a String that corresponds to the duration of the type of turn.
+	 * @return a String that indicates if the type of turn was added or it already existed.
+	 */
 	public String addNewTypeOfTurn(String name, String dur) {
 		String msj = "";
 		float duration = Float.parseFloat(dur);
@@ -340,6 +359,12 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method returns the types of turns that exist in the system.
+	 * <b>pre:</b> An ArrayLists that stores the types of turns have already been created.
+	 * <b>post:</b> It is known the types of turns that exist in the system.
+	 * @return a String that contains the names and durations of the types of turns in the system.
+	 */
 	public String typesOfTurns() {
 		String types = "";
 		for (int i=0; i<turnTypes.size(); i++) {
@@ -349,6 +374,13 @@ public class ClientService {
 		return (types!="")?types:"<<There are no turn types added yet>>";
 	}
 	
+	/**
+	 * This method updates the time of the system.
+	 * <b>pre:</b> A variable that corresponds to the time of the system has already been created and initialized.
+	 * <b>post:</b> The time of the system is correctly updated.
+	 * @param strTime is a String that corresponds to the new system time to set.
+	 * @return a String indicating if the time was correctly updated.
+	 */
 	public String configurateCalendar(String strTime) {
 		String msj = "<<New time correctly configured>>";
 		if (strTime.split(":")[0].length()==1) {
@@ -372,6 +404,15 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method updates the date of the system.
+	 * <b>pre:</b> A variable that corresponds to the date of the system has already been created and initialized.
+	 * <b>post:</b> The date of the system is correctly updated.
+	 * @param month is an int that corresponds to the month of the new system date to set.
+	 * @param day is an int that corresponds to the day of the new system date to set.
+	 * @param year is an int that corresponds to the year of the new system date to set.
+	 * @return a String indicating if the date was correctly updated.
+	 */
 	public String configurateCalendar(int month, int day, int year) {
 		String msj = "<<New date correctly configured>>";
 		if (year>LocalDate.now().getYear()) {
@@ -401,6 +442,16 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method generates a report of the requested turns of an user.
+	 * <b>pre:</b> An ArrayLists that stores the requested turns of an user have already been created.
+	 * <b>post:</b> A report with the requested turns info is created.
+	 * @param id is a String that corresponds to the document number of the user to generate the report.
+	 * @param op is an int that indicates if the report has to be written on an external file.
+	 * @return a String with the report or the path of the generated file.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
 	public String requestedTurnsReport(String id, int op) throws IOException, FileNotFoundException{
 		File userTurns = null;
 		BufferedWriter bw = null;
@@ -447,14 +498,52 @@ public class ClientService {
 		return report;
 	}
 	
+	/**
+	 * This method bans an user is it wasn't present when the his last two turns were attended.
+	 * <b>pre:</b> An ArrayLists that stores the requested turns of an user have already been created.
+	 * <b>post:</b> It is known if the user is banned or not.
+	 * @param id is a String that corresponds to the document number of the user to ban.
+	 * @return a String indicating if the user is banned or not.
+	 */
 	public String banUser(String id) {
 		String msj = "";
 		User user = null;
-		for (int i=0; i<users.size(); i++) {
-			if (users.get(i).getDocumentNumber().contentEquals(id)) {
-				user = users.get(i);
+		// Insertion sort
+		int n = users.size(); 
+        for (int i = 1; i < n; ++i) { 
+            User element = users.get(i); 
+            int j = i - 1;
+            while (j >= 0 && users.get(j).getDocumentNumber().compareTo(element.getDocumentNumber())>0) { 
+                users.set(j + 1, users.get(j)); 
+                j = j - 1; 
+            } 
+            users.set(j + 1, element); 
+        } 
+		// Binary search
+		int low = 0;
+		int high = users.size();
+		String key = id;
+		while(low<=high && user==null)
+		{
+			int mid=(low+high)/2;
+			if(users.get(mid).getDocumentNumber().compareTo(key)<0)
+			{
+				low=mid+1;
+			}
+			else if(users.get(mid).getDocumentNumber().compareTo(key)>0)
+			{
+				high=mid-1;
+			}
+			else
+			{
+				user = users.get(mid);
 			}
 		}
+//		for (int i=0; i<users.size(); i++) {
+//			if (users.get(i).getDocumentNumber().contentEquals(id)) {
+//				user = users.get(i);
+//			}
+//		}
 		if (user.getRequestedTurns().size()>=2) {
 			if (user.getRequestedTurns().get(user.getRequestedTurns().size()-1).getStatusWhenCalled().equals("User not present when attended") && user.getRequestedTurns().get(user.getRequestedTurns().size()-2).getStatusWhenCalled().equals("User not present when attended")) {
 				LocalDateTime banTime = LocalDateTime.now().plusDays(2);
@@ -471,6 +560,16 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method generates a report of all the registered turns in the system.
+	 * <b>pre:</b> An ArrayLists that stores the actual and attended turns have already been created.
+	 * <b>post:</b> A report with the registered turns info is created.
+	 * @param op is an int that indicates the way of sort for the report
+	 * @param op2 is an int that indicates if the report has to be written on an external file.
+	 * @return a String with the report or the path of the generated file.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
 	public String AllTurnsReport(int op, int op2) throws IOException {
 		String msj = "";
 		BufferedWriter bw = null;
@@ -547,6 +646,15 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method generates random users and registers them in the system.
+	 * <b>pre:</b> A file containing random names and last names for users already exists.
+	 * <b>post:</b> Random users are created and registered in the system.
+	 * @param num is an int that indicates the number of random users to create.
+	 * @return a String indicating if the users were registered or not.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
 	public String generateRandomUsers(int num) throws IOException, FileNotFoundException{
 		String msj = "<<"+num+" random users correctly registered>>";
 		String[] documentTypes = {"Citizenship card", "Identity card", "Civil registration", "Passport", "Foreign identity card"};
@@ -573,6 +681,14 @@ public class ClientService {
 		return msj; 
 	}
 	
+	/**
+	 * This method associates turns to the registered users in the system.
+	 * <b>pre:</b> An ArrayLists that stores the users and turns in the system have already been created.
+	 * <b>post:</b> Turns are associated to users in the system.
+	 * @param num is an int that indicates the number of turns to associate.
+	 * @return a String indicating if the turns were associated or not.
+	 * @throws UserAlreadyHasTurnException
+	 */
 	public String randomlyAssociateTurns(int num) throws UserAlreadyHasTurnException{
 		String msj = "<<"+num+" turns correctly associated>>";
 		if (turnTypes.size()==0) {
@@ -594,6 +710,12 @@ public class ClientService {
 		return msj;
 	}
 	
+	/**
+	 * This method attends the actual turns until the system's current time and date, waiting 15 seconds between turn attendance.
+	 * <b>pre:</b> An ArrayLists that stores the actual turns have already been created.
+	 * <b>post:</b> The actual turns that can be attended are attended.
+	 * @return
+	 */
 	public String attendTurnsUntilCurrentTime() {
 		String msj = "";
 		LocalTime time = systemTime.getSystemTime();
@@ -641,5 +763,70 @@ public class ClientService {
 		}
 		msj = (msj=="")?"<<No turns could be attended yet>>":msj;
 		return msj;
+	}
+	
+	/**
+	 * This method saves the attributes of the system.
+	 * <b>pre:</b>
+	 * <b>post:</b> A file with the data of the attributes of the system was created.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 * @throws ClassNotFoundException
+	 */
+	public void saveModel() throws IOException, FileNotFoundException, ClassNotFoundException{
+		File myfile = new File("data/ClientService.dat");
+		/*
+		 * Save order:
+		 * ArrayList<User> users;
+		 * ArrayList<Turn> actualTurns;
+		 * ArrayList<Turn> attendedTurns;
+		 * ArrayList<TurnType> turnTypes;
+		 * model.Date systemDate;
+		 * model.Time systemTime;
+		 * LocalTime attentionTime;
+		 * boolean onWait;
+		 */
+		if (myfile.exists()) {
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(myfile));
+			users.addAll((ArrayList) ois.readObject());
+			actualTurns.addAll((ArrayList) ois.readObject());
+			attendedTurns.addAll((ArrayList) ois.readObject());
+			turnTypes.addAll((ArrayList) ois.readObject());
+			systemDate = (model.Date) ois.readObject();
+			systemTime = (model.Time) ois.readObject();
+			attentionTime = (LocalTime) ois.readObject();
+			onWait = (boolean) ois.readObject();
+		}
+		ObjectOutputStream ops= new ObjectOutputStream(new FileOutputStream(myfile));
+		ops.writeObject(users);
+		ops.writeObject(actualTurns);
+		ops.writeObject(attendedTurns);
+		ops.writeObject(turnTypes);
+		ops.writeObject(systemDate);
+		ops.writeObject(systemTime);
+		ops.writeObject(attentionTime);
+		ops.writeObject(onWait);
+		ops.close();
+	}
+	
+	/**
+	 * This method loads the data of the attributes of the system.
+	 * <b>pre:</b> A file containing the data of the attributes already exists.
+	 * <b>post:</b> The data of the attributes is correctly loaded form the file.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 * @throws ClassNotFoundException
+	 */
+	public void loadModel() throws IOException, FileNotFoundException, ClassNotFoundException{
+		File myfile = new File("data/ClientService.dat");
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(myfile));
+		users.addAll((ArrayList) ois.readObject());
+		actualTurns.addAll((ArrayList) ois.readObject());
+		attendedTurns.addAll((ArrayList) ois.readObject());
+		turnTypes.addAll((ArrayList) ois.readObject());
+		systemDate = (model.Date) ois.readObject();
+		systemTime = (model.Time) ois.readObject();
+		attentionTime = (LocalTime) ois.readObject();
+		onWait = (boolean) ois.readObject();
 	}
 }

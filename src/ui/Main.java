@@ -26,7 +26,7 @@ public class Main {
 					long start = 0;
 					//long end = 0;
 					System.out.println("\n"+obj.service.getSystemDate().getDate()+" | "+obj.service.getSystemTime().getTime());
-					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend next turn.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[9] Generate report with all persons who have requested a turn.\n[10] Generate random users registered.\n[11] Randomly assign turns to registered users.\n[12] Attend turns until current time.\n[13] Exit.");
+					System.out.println("-------MENU-------\n[1] Add User.\n[2] Create new type of turn.\n[3] Register turn.\n[4] Attend next turn.\n[5] Configurate system's Date and Time.\n[6] Show system's Date and Time.\n[7] Generate report with all the turns someone has ever requested.\n[8] Ban a person who hasn't been present when called for the last two turns.\n[9] Generate report with all persons who have requested a turn.\n[10] Generate random users registered.\n[11] Randomly assign turns to registered users.\n[12] Attend turns until current time.\n[13] Save model.\n[14] Load model.\n[15] Exit.");
 					int op = Integer.valueOf(obj.sc.nextLine());
 					if(op<1 || op>12) {
 						System.out.println("<<Invalid Input. Please try Again>>");
@@ -94,6 +94,21 @@ public class Main {
 							System.out.println("<<Operation time: "+(System.currentTimeMillis()-start)+" milliseconds>>");
 							break;
 						case 13:
+							try {
+								obj.service.saveModel();
+							} catch (Exception e) {
+								System.out.println(e);
+								System.out.println("<<Model couldn't be saved>>");
+							}
+							break;
+						case 14:
+							try {
+								obj.service.loadModel();
+							} catch (Exception e) {
+								System.out.println(e);
+								System.out.println("<<Model couldn't be loaded>>");
+							}
+						case 15:
 							start = System.currentTimeMillis();
 							endWhile = true;
 							break;
